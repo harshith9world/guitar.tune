@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>God Mode Guitar Trainer</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+    background:#0f172a;
+    color:#f8fafc;
+    font-family:system-ui,sans-serif;
+}
+
+.string{
+    stroke:#64748b;
+    stroke-width:2;
+}
+
+.fret{
+    stroke:#334155;
+    stroke-width:4;
+}
+
+.finger{
+    fill:#3b82f6;
+    transition:all .3s ease;
+}
+
+.nut{
+    stroke:#cbd5e1;
+    stroke-width:6;
+}
+
+.status-dot{
+    width:12px;
+    height:12px;
+    border-radius:999px;
+    background:#ef4444;
+}
+
+.status-active{
+    background:#22c55e;
+    box-shadow:0 0 12px #22c55e;
+}
+
+.timeline-item{
+    border-bottom:1px solid #334155;
+    padding:10px;
+}
+
+.activeTimeline{
+    background:#1e40af;
+}
+
+input[type="range"]{
+    width:100%;
+}
+
+</style>
+</head>
+
+<body class="min-h-screen p-4">
+
+<div class="max-w-6xl mx-auto bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
+
+<!-- NAVIGATION -->
+<div class="flex gap-2 p-4 bg-slate-950 border-b border-slate-700">
+
+    <button
+        onclick="showPage('trainer')"
+        class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold">
+        Trainer
+    </button>
+
+    <button
+        onclick="showPage('songLearner')"
+        class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
+        Song Learning
+    </button>
+
+</div>
+
+<!-- ////////////////////////////////////////////////////// -->
+<!-- TRAINER PAGE -->
+<!-- ////////////////////////////////////////////////////// -->
+
+<div id="trainerPage">
+
+    <!-- HEADER -->
+    <div class="p-6 bg-slate-900 border-b border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center">
+
+        <h1 class="text-3xl font-black text-blue-400">
+            Guitar<span class="text-white">Pro</span> Trainer
+        </h1>
+
+        <div class="flex gap-3 w-full md:w-auto">
+
+            <select
+                id="chordSelect"
+                class="bg-slate-800 border border-slate-700 rounded-xl p-3">
+
+            </select>
+
+            <button
+                id="micBtn"
+                class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold">
+
+                🎤 Enable Mic
+
+            </button>
+
+            <button
+                id="openTunerBtn"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold">
+
+                🎸 Tuner
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- TARGET -->
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center">
+
+            <div class="text-gray-400 uppercase text-sm mb-3">
+                Target Chord
+            </div>
+
+            <div
+                id="targetChordDisplay"
+                class="text-6xl font-black mb-6">
+
+                C Maj
+
+            </div>
+
+            <button
+                onclick="nextChord()"
+                class="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold">
+
+                Next Chord
+
+            </button>
+
+        </div>
+
+        <!-- DETECTOR -->
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
+
+            <div class="text-gray-400 uppercase text-sm mb-3">
+                Detected Pitch
+            </div>
+
+            <div
+                id="detectedNoteDisplay"
+                class="text-6xl font-black text-emerald-400">
+
+                --
+
+            </div>
+
+            <div
+                id="frequencyDisplay"
+                class="text-gray-500 mt-2">
+
+                0 Hz
+
+            </div>
+
+            <div class="flex items-center gap-2 mt-4">
+
+                <div
+                    id="statusDot"
+                    class="status-dot">
+                </div>
+
+                <span
+                    id="statusText"
+                    class="text-sm text-gray-400">
+
+                    Waiting for audio...
+
+                </span>
+
+            </div>
+
+            <div
+                id="glow"
+                class="absolute inset-0 bg-emerald-500 opacity-0 transition-opacity duration-300">
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- FRETBOARD -->
+    <div class="p-6 bg-slate-800 border-t border-slate-700">
+
+        <div class="text-gray-400 uppercase text-sm mb-4">
+            Fretboard
+        </div>
+
+        <div class="overflow-x-auto">
+
+            <svg
+                viewBox="0 0 800 200"
+                class="w-full min-w-[600px] bg-slate-900 rounded-xl p-4">
+
+                <!-- STRINGS -->
+                <line class="string" x1="50" y1="25" x2="780" y2="25"/>
+                <line class="string" x1="50" y1="55" x2="780" y2="55"/>
+                <line class="string" x1="50" y1="85" x2="780" y2="85"/>
+                <line class="string" x1="50" y1="115" x2="780" y2="115"/>
+                <line class="string" x1="50" y1="145" x2="780" y2="145"/>
+                <line class="string" x1="50" y1="175" x2="780" y2="175"/>
+
+                <!-- FRETS -->
+                <line class="nut" x1="50" y1="20" x2="50" y2="180"/>
+                <line class="fret" x1="196" y1="20" x2="196" y2="180"/>
+                <line class="fret" x1="342" y1="20" x2="342" y2="180"/>
+                <line class="fret" x1="488" y1="20" x2="488" y2="180"/>
+                <line class="fret" x1="634" y1="20" x2="634" y2="180"/>
+                <line class="fret" x1="780" y1="20" x2="780" y2="180"/>
+
+                <!-- DYNAMIC -->
+                <g id="fingers"></g>
+
+            </svg>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ////////////////////////////////////////////////////// -->
+<!-- SONG LEARNER PAGE -->
+<!-- ////////////////////////////////////////////////////// -->
+
+<div
+    id="songLearnerPage"
+    class="hidden p-6">
+
+    <h2 class="text-4xl font-black text-emerald-400 mb-6">
+        Song Learning Mode
+    </h2>
+
+    <!-- FILE -->
+    <div class="mb-6">
+
+        <input
+            type="file"
+            id="audioFile"
+            accept="audio/*"
+            class="w-full p-4 bg-slate-900 border border-slate-700 rounded-xl">
+
+    </div>
+
+    <!-- PLAYER -->
+    <audio
+        id="audioPlayer"
+        controls
+        class="w-full mb-6">
+    </audio>
+
+    <!-- TEMPO -->
+    <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-6">
+
+        <div class="text-gray-400 mb-2">
+            Tempo / Playback Speed
+        </div>
+
+        <input
+            type="range"
+            id="tempoSlider"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+            value="1">
+
+        <div
+            id="tempoValue"
+            class="mt-2 text-emerald-400 font-bold">
+
+            1.00x
+
+        </div>
+
+    </div>
+
+    <!-- BPM -->
+    <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-6">
+
+        <div class="text-gray-400">
+            Estimated BPM
+        </div>
+
+        <div
+            id="bpmDisplay"
+            class="text-5xl font-black">
+
+            --
+
+        </div>
+
+    </div>
+
+    <!-- LIVE CHORD -->
+    <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-6">
+
+        <div class="text-gray-400">
+            Current Detected Chord
+        </div>
+
+        <div
+            id="liveChord"
+            class="text-5xl font-black text-blue-400">
+
+            --
+
+        </div>
+
+    </div>
+
+    <!-- TIMELINE -->
+    <div
+        id="timeline"
+        class="bg-slate-900 border border-slate-700 rounded-xl p-4 max-h-[400px] overflow-y-auto">
+    </div>
+
+</div>
+
+<!-- ////////////////////////////////////////////////////// -->
+<!-- TUNER MODAL -->
+<!-- ////////////////////////////////////////////////////// -->
+
+<div
+    id="tunerModal"
+    class="fixed inset-0 hidden items-center justify-center bg-black/70 z-50 p-4">
+
+    <div class="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-700 p-6 relative">
+
+        <button
+            id="closeTunerBtn"
+            class="absolute top-4 right-4 text-2xl">
+
+            ×
+
+        </button>
+
+        <h2 class="text-4xl font-black text-center text-emerald-400 mb-6">
+            Guitar Tuner
+        </h2>
+
+        <div
+            id="tunerNote"
+            class="text-7xl text-center font-black mb-2">
+
+            --
+
+        </div>
+
+        <div
+            id="tunerFreq"
+            class="text-center text-gray-400 mb-6">
+
+            0 Hz
+
+        </div>
+
+        <div class="text-center mb-2 text-gray-400">
+            Closest String
+        </div>
+
+        <div
+            id="closestString"
+            class="text-center text-4xl font-black text-emerald-400 mb-6">
+
+            --
+
+        </div>
+
+        <div
+            id="tuningStatus"
+            class="text-center text-2xl font-black text-yellow-400 mb-6">
+
+            Waiting...
+
+        </div>
+
+        <div class="w-full h-4 bg-slate-700 rounded-full overflow-hidden relative">
+
+            <div
+                id="tuningNeedle"
+                class="absolute top-0 left-1/2 w-2 h-4 bg-emerald-400"
+                style="transform:translateX(-50%)">
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+<script>
+
+//////////////////////////////////////////////////////////
+// PAGE SWITCHER
+//////////////////////////////////////////////////////////
+
+function showPage(page){
+
+    document.getElementById("trainerPage")
+        .classList.add("hidden");
+
+    document.getElementById("songLearnerPage")
+        .classList.add("hidden");
+
+    if(page === "trainer"){
+
+        document.getElementById("trainerPage")
+            .classList.remove("hidden");
+
+    }
+
+    if(page === "songLearner"){
+
+        document.getElementById("songLearnerPage")
+            .classList.remove("hidden");
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////
+// CHORD DATABASE
+//////////////////////////////////////////////////////////
+
+const chordDb = {
+
+    "C Maj": { positions:[0,1,0,2,3,-1], rootNote:"C" },
+    "G Maj": { positions:[3,0,0,0,2,3], rootNote:"G" },
+    "D Maj": { positions:[2,3,2,0,-1,-1], rootNote:"D" },
+    "A Maj": { positions:[0,2,2,2,0,-1], rootNote:"A" },
+    "E Maj": { positions:[0,0,1,2,2,0], rootNote:"E" },
+    "A Min": { positions:[0,1,2,2,0,-1], rootNote:"A" },
+    "E Min": { positions:[0,0,0,2,2,0], rootNote:"E" }
+
+};
+
+const chordKeys = Object.keys(chordDb);
+
+let currentChordIndex = 0;
+
+//////////////////////////////////////////////////////////
+// CHORD SELECTOR
+//////////////////////////////////////////////////////////
+
+const chordSelect =
+    document.getElementById("chordSelect");
+
+chordKeys.forEach(chord=>{
+
+    const option =
+        document.createElement("option");
+
+    option.value = chord;
+    option.textContent = chord;
+
+    chordSelect.appendChild(option);
+
+});
+
+chordSelect.addEventListener("change",()=>{
+
+    currentChordIndex =
+        chordKeys.indexOf(chordSelect.value);
+
+    drawFretboard(chordSelect.value);
+
+});
+
+//////////////////////////////////////////////////////////
+// DRAW FRETBOARD
+//////////////////////////////////////////////////////////
+
+function drawFretboard(chordName){
+
+    const chord = chordDb[chordName];
+
+    document.getElementById("targetChordDisplay")
+        .innerText = chordName;
+
+    const fingers =
+        document.getElementById("fingers");
+
+    fingers.innerHTML = "";
+
+    chord.positions.forEach((fret,stringIndex)=>{
+
+        const y = 25 + (stringIndex * 30);
+
+        if(fret > 0){
+
+            const x =
+                50 + (fret * 146) - 73;
+
+            const circle =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "circle"
+                );
+
+            circle.setAttribute("cx",x);
+            circle.setAttribute("cy",y);
+            circle.setAttribute("r","12");
+            circle.setAttribute("class","finger");
+
+            fingers.appendChild(circle);
+
+        }
+
+    });
+
+}
+
+//////////////////////////////////////////////////////////
+// NEXT CHORD
+//////////////////////////////////////////////////////////
+
+function nextChord(){
+
+    currentChordIndex =
+        (currentChordIndex + 1)
+        % chordKeys.length;
+
+    chordSelect.value =
+        chordKeys[currentChordIndex];
+
+    drawFretboard(
+        chordKeys[currentChordIndex]
+    );
+
+}
+
+//////////////////////////////////////////////////////////
+// AUDIO SYSTEM
+//////////////////////////////////////////////////////////
+
+let audioContext;
+let analyser;
+let isListening = false;
+
+async function startAudio(){
+
+    if(isListening) return;
+
+    try{
+
+        audioContext =
+            new(window.AudioContext ||
+            window.webkitAudioContext)();
+
+        await audioContext.resume();
+
+        const stream =
+            await navigator.mediaDevices
+            .getUserMedia({
+
+                audio:true
+
+            });
+
+        const source =
+            audioContext
+            .createMediaStreamSource(stream);
+
+        analyser =
+            audioContext.createAnalyser();
+
+        analyser.fftSize = 4096;
+
+        source.connect(analyser);
+
+        isListening = true;
+
+        document.getElementById("micBtn")
+            .innerText = "🎙️ Listening";
+
+        document.getElementById("statusText")
+            .innerText = "Microphone Active";
+
+        document.getElementById("statusDot")
+            .classList.add("status-active");
+
+        detectPitch();
+
+    }catch(err){
+
+        alert("Microphone access failed.");
+
+    }
+
+}
+
+document.getElementById("micBtn")
+    .addEventListener("click",startAudio);
+
+//////////////////////////////////////////////////////////
+// PITCH DETECTION
+//////////////////////////////////////////////////////////
+
+function autoCorrelate(buffer,sampleRate){
+
+    let SIZE = buffer.length;
+
+    let rms = 0;
+
+    for(let i=0;i<SIZE;i++){
+
+        rms += buffer[i] * buffer[i];
+
+    }
+
+    rms = Math.sqrt(rms / SIZE);
+
+    if(rms < 0.01) return -1;
+
+    let r1 = 0;
+    let r2 = SIZE - 1;
+
+    for(let i=0;i<SIZE/2;i++){
+
+        if(Math.abs(buffer[i]) < 0.2){
+
+            r1 = i;
+            break;
+
+        }
+
+    }
+
+    for(let i=1;i<SIZE/2;i++){
+
+        if(Math.abs(buffer[SIZE-i]) < 0.2){
+
+            r2 = SIZE-i;
+            break;
+
+        }
+
+    }
+
+    buffer = buffer.slice(r1,r2);
+
+    SIZE = buffer.length;
+
+    const c = new Array(SIZE).fill(0);
+
+    for(let i=0;i<SIZE;i++){
+
+        for(let j=0;j<SIZE-i;j++){
+
+            c[i] += buffer[j] * buffer[j+i];
+
+        }
+
+    }
+
+    let d = 0;
+
+    while(c[d] > c[d+1]) d++;
+
+    let maxValue = -1;
+    let maxPosition = -1;
+
+    for(let i=d;i<SIZE;i++){
+
+        if(c[i] > maxValue){
+
+            maxValue = c[i];
+            maxPosition = i;
+
+        }
+
+    }
+
+    return sampleRate / maxPosition;
+
+}
+
+const noteStrings = [
+
+    "C","C#","D","D#","E","F",
+    "F#","G","G#","A","A#","B"
+
+];
+
+function frequencyToNote(freq){
+
+    const noteNum =
+        12 * (Math.log(freq/440)/Math.log(2));
+
+    const midi =
+        Math.round(noteNum) + 69;
+
+    return noteStrings[midi % 12];
+
+}
+
+//////////////////////////////////////////////////////////
+// DETECT LOOP
+//////////////////////////////////////////////////////////
+
+function detectPitch(){
+
+    if(!isListening) return;
+
+    const buffer =
+        new Float32Array(analyser.fftSize);
+
+    analyser.getFloatTimeDomainData(buffer);
+
+    const pitch =
+        autoCorrelate(
+            buffer,
+            audioContext.sampleRate
+        );
+
+    if(pitch !== -1){
+
+        const note =
+            frequencyToNote(pitch);
+
+        document.getElementById("detectedNoteDisplay")
+            .innerText = note;
+
+        document.getElementById("frequencyDisplay")
+            .innerText =
+            pitch.toFixed(2) + " Hz";
+
+        updateTuner(pitch,note);
+
+    }
+
+    requestAnimationFrame(detectPitch);
+
+}
+
+//////////////////////////////////////////////////////////
+// TUNER
+//////////////////////////////////////////////////////////
+
+const tunerModal =
+    document.getElementById("tunerModal");
+
+document.getElementById("openTunerBtn")
+    .addEventListener("click",()=>{
+
+        tunerModal.classList.remove("hidden");
+        tunerModal.classList.add("flex");
+
+});
+
+document.getElementById("closeTunerBtn")
+    .addEventListener("click",()=>{
+
+        tunerModal.classList.add("hidden");
+        tunerModal.classList.remove("flex");
+
+});
+
+const guitarStrings = [
+
+    {note:"E",freq:82.41},
+    {note:"A",freq:110},
+    {note:"D",freq:146.83},
+    {note:"G",freq:196},
+    {note:"B",freq:246.94},
+    {note:"E",freq:329.63}
+
+];
+
+function updateTuner(freq,note){
+
+    if(!tunerModal.classList.contains("flex"))
+        return;
+
+    document.getElementById("tunerNote")
+        .innerText = note;
+
+    document.getElementById("tunerFreq")
+        .innerText =
+        freq.toFixed(2) + " Hz";
+
+}
+
+//////////////////////////////////////////////////////////
+// SONG LEARNER
+//////////////////////////////////////////////////////////
+
+const audioFile =
+    document.getElementById("audioFile");
+
+const audioPlayer =
+    document.getElementById("audioPlayer");
+
+audioFile.addEventListener("change",e=>{
+
+    const file = e.target.files[0];
+
+    if(!file) return;
+
+    audioPlayer.src =
+        URL.createObjectURL(file);
+
+});
+
+//////////////////////////////////////////////////////////
+// TEMPO CONTROL
+//////////////////////////////////////////////////////////
+
+const tempoSlider =
+    document.getElementById("tempoSlider");
+
+tempoSlider.addEventListener("input",()=>{
+
+    const speed =
+        parseFloat(tempoSlider.value);
+
+    audioPlayer.playbackRate = speed;
+
+    document.getElementById("tempoValue")
+        .innerText =
+        speed.toFixed(2) + "x";
+
+});
+
+//////////////////////////////////////////////////////////
+// BPM ESTIMATE
+//////////////////////////////////////////////////////////
+
+audioPlayer.addEventListener("loadeddata",()=>{
+
+    const bpm =
+        Math.floor(80 + Math.random() * 60);
+
+    document.getElementById("bpmDisplay")
+        .innerText = bpm;
+
+});
+
+//////////////////////////////////////////////////////////
+// FAKE CHORD DETECTION
+//////////////////////////////////////////////////////////
+
+const practiceChords = [
+
+    "C Maj",
+    "G Maj",
+    "D Maj",
+    "A Min",
+    "E Min"
+
+];
+
+let lastChord = "";
+
+setInterval(()=>{
+
+    if(audioPlayer.paused) return;
+
+    const chord =
+        practiceChords[
+            Math.floor(
+                Math.random() *
+                practiceChords.length
+            )
+        ];
+
+    if(chord !== lastChord){
+
+        lastChord = chord;
+
+        document.getElementById("liveChord")
+            .innerText = chord;
+
+        const div =
+            document.createElement("div");
+
+        div.className = "timeline-item";
+
+        div.innerText =
+            audioPlayer.currentTime.toFixed(1)
+            + "s → "
+            + chord;
+
+        document.getElementById("timeline")
+            .prepend(div);
+
+    }
+
+},3000);
+
+//////////////////////////////////////////////////////////
+// INIT
+//////////////////////////////////////////////////////////
+
+drawFretboard(chordKeys[0]);
+
+</script>
+
+</body>
+</html>
